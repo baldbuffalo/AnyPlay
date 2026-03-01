@@ -12,13 +12,13 @@ jobs:
     steps:
       - uses: actions/checkout@v6.0.2
 
-      - name: Install dependencies
+      - name: Install dependencies (with FFmpeg for video)
         run: |
           sudo apt-get update
           sudo apt-get install -y \
             git cmake g++ pkg-config \
-            libudev-dev libx11-dev libegl1-mesa-dev \
-            libgl1-mesa-dev libffmpeg-dev
+            libudev-dev libx11-dev libegl1-mesa-dev libgl1-mesa-dev \
+            ffmpeg libavcodec-dev libavformat-dev libavutil-dev libswresample-dev libswscale-dev
 
       - name: Clone or Update Dolphin
         run: |
