@@ -1,53 +1,51 @@
-name: Build Dolphin (Wii/WiiU Emulator)
+name: Build Dolphin Wii U
 
 on:
   push:
     branches: [main]
-  workflow_dispatch:
+  pull_request:
 
 jobs:
   build:
     runs-on: ubuntu-latest
+    env:
+      CMAKE_PREFIX_PATH: /usr/lib/x86_64-linux-gnu/cmake
 
     steps:
-      # 1️⃣ Checkout your repo
-      - name: Checkout repository
-        uses: actions/checkout@v6.0.2
+    - name: Checkout repo
+      uses: actions/checkout@v3
 
-      # 2️⃣ Install required dependencies
-      - name: Install dependencies
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y \
-            git cmake ninja-build g++ pkg-config \
-            libudev-dev libevdev-dev \
-            libx11-dev libxi-dev libxrandr-dev libxext-dev libxfixes-dev libxinerama-dev \
-            libxxf86vm-dev libglfw3-dev \
-            libegl1-mesa-dev libgl1-mesa-dev \
-            ffmpeg \
-            libavcodec-dev libavformat-dev libavutil-dev \
-            libswresample-dev libswscale-dev \
-            qt6-base-dev qt6-tools-dev qt6-declarative-dev \
-            liblzma-dev libbz2-dev libzstd-dev liblz4-dev
+    - name: Install dependencies
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y \
+          build-essential cmake ninja-build git pkg-config \
+          libsdl3-dev libglslang-dev libusb-1.0-0-dev \
+          libpugixml-dev libenet-dev libmbedtls-dev \
+          libsfml-dev libminiupnpc-dev libhidapi-dev \
+          libspeexdsp-dev libcurl4-openssl-dev libbrotli-dev \
+          liblzma-dev libzstd-dev libbz2-dev libssl-dev \
+          libpulse-dev libasound2-dev libjack-jackd2-dev \
+          libx11-dev libxrandr-dev libxinerama-dev libxcursor-dev \
+          libxext-dev libxi-dev python3 python3-pip
 
-      # 3️⃣ Clone Dolphin with submodules
-      - name: Clone Dolphin (with submodules)
-        run: |
-          rm -rf Wii/Dolphin
-          mkdir -p Wii
-          git clone --depth 1 --recurse-submodules https://github.com/dolphin-emu/dolphin.git Wii/Dolphin
+    - name: Configure CMake
+      run: |
+        rm -rf build
+        mkdir build
+        cd build
+        cmake .. \
+          -DCMAKE_BUILD_TYPE=Release \
+          -G Ninja \
+          -DCMAKE_PREFIX_PATH=$CMAKE_PREFIX_PATH
 
-      # 4️⃣ Configure & Build Dolphin
-      - name: Build Dolphin
-        run: |
-          mkdir -p Wii/Dolphin/build
-          cd Wii/Dolphin/build
-          cmake -G Ninja -DCMAKE_POLICY_DEFAULT_CMP0080=NEW ..
-          ninja -j$(nproc)
+    - name: Build Dolphin
+      run: |
+        cd build
+        ninja
 
-      # 5️⃣ Upload built binaries
-      - name: Upload Dolphin Build
-        uses: actions/upload-artifact@v7
-        with:
-          name: dolphin-build
-          path: Wii/Dolphin/build/Binaries
+    - name: Archive build
+      uses: actions/upload-artifact@v3
+      with:
+        name: dolphin-wiiu-build
+        path: build/
