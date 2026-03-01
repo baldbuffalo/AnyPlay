@@ -1,0 +1,44 @@
+name: Update and Build Wii Emulators
+
+on:
+  push:                   # Runs on every commit push
+    branches: [main]      # Only on main branch (change if needed)
+  workflow_dispatch:       # Also allows manual run
+
+jobs:
+  build-wii:
+    runs-on: ubuntu-latest
+
+    steps:
+      # Checkout AnyPlay repo
+      - uses: actions/checkout@6.0.2
+
+      # Install dependencies for Dolphin
+      - name: Install dependencies
+        run: sudo apt-get update && sudo apt-get install -y cmake g++ git pkg-config
+
+      # Clone or update Dolphin
+      - name: Clone or Update Dolphin
+        run: |
+          DOLPHIN_DIR="Wii/Dolphin"
+          if [ ! -d "$DOLPHIN_DIR" ]; then
+            mkdir -p Wii
+            git clone https://github.com/dolphin-emu/dolphin.git $DOLPHIN_DIR
+          else
+            git -C $DOLPHIN_DIR pull
+          fi
+
+      # Build Dolphin
+      - name: Build Dolphin
+        run: |
+          mkdir -p Wii/Dolphin/build
+          cd Wii/Dolphin/build
+          cmake ..
+          make -j$(nproc)
+
+      # Upload build artifact using v7
+      - name: Upload Build Artifact
+        uses: actions/upload-artifact@v7
+        with:
+          name: dolphin-build
+          path: Wii/Dolphin/build
