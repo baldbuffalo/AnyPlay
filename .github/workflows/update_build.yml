@@ -11,7 +11,7 @@ jobs:
 
     steps:
       # Checkout AnyPlay repo
-      - uses: actions/checkout@6.0.2
+      - uses: actions/checkout@v6.0.2
 
       # Install dependencies for Dolphin
       - name: Install dependencies
