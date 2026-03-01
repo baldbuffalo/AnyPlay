@@ -1,13 +1,13 @@
-name: Build Dolphin for LG WebOS TV
+name: Build for LG WebOS TV
 
 on:
   push:
     branches:
       - main
-  workflow_dispatch:
+  pull_request:
 
 jobs:
-  build-dolphin:
+  build:
     runs-on: ubuntu-latest
 
     env:
@@ -18,33 +18,46 @@ jobs:
       PATH: /opt/devkitpro/devkitPPC/bin:/opt/devkitpro/tools/bin:$PATH
 
     steps:
-      - name: Install basic tools
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y tar gzip git cmake ninja-build build-essential pkg-config \
-            libbz2-dev liblzma-dev zlib1g-dev liblz4-dev \
-            libenet-dev libgl1-mesa-dev libegl1-mesa-dev \
-            python3 python3-pip perl wget curl
+    - name: Checkout repository
+      uses: actions/checkout@v6.0.2
+      with:
+        repository: baldbuffalo/AnyPlay
+        token: ${{ secrets.GITHUB_TOKEN }}
+        ssh-strict: true
+        ssh-user: git
+        persist-credentials: true
+        clean: true
+        sparse-checkout-cone-mode: true
+        fetch-depth: 1
+        fetch-tags: false
+        show-progress: true
+        lfs: false
+        submodules: false
+        set-safe-directory: true
 
-      - name: Checkout repository
-        uses: actions/checkout@v6.0.2
-        with:
-          repository: baldbuffalo/AnyPlay
-          fetch-depth: 1
-          clean: true
+    - name: Install build dependencies
+      run: |
+        apt-get update
+        apt-get install -y tar gzip git cmake ninja-build build-essential pkg-config \
+          libbz2-dev liblzma-dev zlib1g-dev liblz4-dev \
+          libenet-dev libgl1-mesa-dev libegl1-mesa-dev \
+          python3 python3-pip perl wget curl
 
-      - name: Create build folder
-        run: mkdir -p build && cd build
+    - name: Setup DevkitPro (Wii U)
+      run: |
+        mkdir -p $DEVKITPRO
+        cd $DEVKITPRO
+        git clone https://github.com/devkitPro/buildscripts.git
 
-      - name: Configure CMake
-        run: cmake .. -DCMAKE_BUILD_TYPE=Release -G Ninja \
-            -DCMAKE_INSTALL_PREFIX=$DEVKITPRO
+    - name: Build your app for LG WebOS TV
+      run: |
+        mkdir -p build
+        cd build
+        cmake .. -DCMAKE_INSTALL_PREFIX=$DEVKITPRO
+        cmake --build . -- -j$(nproc)
 
-      - name: Build Dolphin
-        run: ninja -C build
-
-      - name: Package build
-        uses: actions/upload-artifact@v7
-        with:
-          name: dolphin-build
-          path: build/
+    - name: Upload build artifacts
+      uses: actions/upload-artifact@v7
+      with:
+        name: lgwebos-build
+        path: build/
