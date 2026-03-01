@@ -1,0 +1,53 @@
+name: Build Dolphin (Wii Emulator)
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      # 1️⃣ Checkout repo
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # 2️⃣ Install all required dependencies
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            git cmake g++ pkg-config \
+            libudev-dev \
+            libx11-dev libxi-dev libxrandr-dev \
+            libegl1-mesa-dev libgl1-mesa-dev \
+            ffmpeg \
+            libavcodec-dev libavformat-dev libavutil-dev \
+            libswresample-dev libswscale-dev
+
+      # 3️⃣ Clone Dolphin (fast shallow clone)
+      - name: Clone Dolphin
+        run: |
+          if [ ! -d "Wii/Dolphin/.git" ]; then
+            mkdir -p Wii
+            git clone --depth 1 https://github.com/dolphin-emu/dolphin.git Wii/Dolphin
+          else
+            git -C Wii/Dolphin pull
+          fi
+
+      # 4️⃣ Configure & Build Dolphin
+      - name: Build Dolphin
+        run: |
+          mkdir -p Wii/Dolphin/build
+          cd Wii/Dolphin/build
+          cmake -DCMAKE_POLICY_DEFAULT_CMP0080=NEW ..
+          make -j$(nproc)
+
+      # 5️⃣ Upload built binaries
+      - name: Upload Dolphin Build
+        uses: actions/upload-artifact@v4
+        with:
+          name: dolphin-build
+          path: Wii/Dolphin/build
