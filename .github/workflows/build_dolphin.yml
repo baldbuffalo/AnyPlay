@@ -1,66 +1,72 @@
-name: Build Dolphin Wii U
+name: WiiU Build
 
 on:
   push:
-    branches: [main]
+    branches: [ main ]
   pull_request:
+    branches: [ main ]
 
 jobs:
   build:
+    name: Build WiiU Homebrew
     runs-on: ubuntu-latest
     env:
-      CMAKE_PREFIX_PATH: /usr/lib/x86_64-linux-gnu/cmake
+      DEVKITPRO: /opt/devkitpro
+      DEVKITPPC: /opt/devkitpro/devkitPPC
+      WUT_ROOT: /opt/devkitpro/wut
+      PORTLIBS: /opt/devkitpro/portlibs/wiiu
+      PATH: /opt/devkitpro/devkitPPC/bin:/opt/devkitpro/tools/bin:$PATH
 
     steps:
-    - name: Checkout repo
+    - name: Checkout repository
       uses: actions/checkout@v6.0.2
 
-    - name: Install basic dependencies
+    - name: Install build dependencies
       run: |
         sudo apt-get update
         sudo apt-get install -y \
-          build-essential cmake ninja-build git pkg-config \
-          libusb-1.0-0-dev libpugixml-dev libenet-dev \
-          libmbedtls-dev libsfml-dev libminiupnpc-dev libhidapi-dev \
-          libspeexdsp-dev libcurl4-openssl-dev libbrotli-dev \
-          liblzma-dev libzstd-dev libbz2-dev libssl-dev \
-          libpulse-dev libasound2-dev libjack-jackd2-dev \
-          libx11-dev libxrandr-dev libxinerama-dev libxcursor-dev \
-          libxext-dev libxi-dev python3 python3-pip
+          build-essential cmake ninja-build git wget unzip \
+          libbz2-dev liblzma-dev libzstd-dev zlib1g-dev \
+          libssl-dev libiconv-hook-dev curl \
+          pkg-config python3 python3-pip python3-setuptools \
+          libxxhash-dev bzip2 xz-utils lz4 \
+          libglib2.0-dev libudev-dev libevdev-dev \
+          perl
 
-    - name: Install SDL3
+    # SDL3 build from source
+    - name: Build SDL3
       run: |
-        git clone --branch release-3.3.0 https://github.com/libsdl-org/SDL.git SDL3
+        git clone https://github.com/libsdl-org/SDL.git SDL3
         cd SDL3
+        git checkout release-3.3.2   # latest stable SDL3 tag
         mkdir build && cd build
         cmake .. -DCMAKE_INSTALL_PREFIX=/usr/local -DSDL_STATIC=OFF
         sudo cmake --build . --target install
 
-    - name: Install glslang
+    # glslang build from source
+    - name: Build glslang
       run: |
-        git clone --branch master https://github.com/KhronosGroup/glslang.git glslang
+        git clone https://github.com/KhronosGroup/glslang.git
         cd glslang
+        git checkout master
         mkdir build && cd build
         cmake .. -DCMAKE_INSTALL_PREFIX=/usr/local
         sudo cmake --build . --target install
 
-    - name: Configure CMake
-      run: |
-        rm -rf build
-        mkdir build
-        cd build
-        cmake .. \
-          -DCMAKE_BUILD_TYPE=Release \
-          -G Ninja \
-          -DCMAKE_PREFIX_PATH=/usr/local:$CMAKE_PREFIX_PATH
+    # Clone your Wii U project
+    - name: Clone Project (if needed)
+      run: git clone https://github.com/yourusername/your-wiiu-project.git
 
-    - name: Build Dolphin
+    # Build the Wii U project
+    - name: Build Wii U Homebrew
       run: |
-        cd build
+        mkdir -p build && cd build
+        cmake .. -DCMAKE_BUILD_TYPE=Release -G Ninja
         ninja
 
-    - name: Archive build
+    # Upload artifacts
+    - name: Upload WiiU build artifacts
       uses: actions/upload-artifact@v7
       with:
-        name: dolphin-wiiu-build
-        path: build/
+        name: wiiu-build
+        path: build/*.elf
