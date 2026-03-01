@@ -10,9 +10,9 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      # 1️⃣ Checkout repo
+      # 1️⃣ Checkout repository
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6.0.2
 
       # 2️⃣ Install all required dependencies
       - name: Install dependencies
@@ -20,7 +20,7 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y \
             git cmake g++ pkg-config \
-            libudev-dev \
+            libudev-dev libevdev-dev \
             libx11-dev libxi-dev libxrandr-dev \
             libegl1-mesa-dev libgl1-mesa-dev \
             ffmpeg \
@@ -47,7 +47,7 @@ jobs:
 
       # 5️⃣ Upload built binaries
       - name: Upload Dolphin Build
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: dolphin-build
           path: Wii/Dolphin/build
