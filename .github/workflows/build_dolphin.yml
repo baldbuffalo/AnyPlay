@@ -1,4 +1,4 @@
-name: Build Dolphin Full GUI
+name: Build Dolphin for LG WebOS TV
 
 on:
   push:
@@ -7,77 +7,45 @@ on:
   workflow_dispatch:
 
 jobs:
-  build:
+  build-dolphin:
     runs-on: ubuntu-latest
 
     env:
       DEVKITPRO: /opt/devkitpro
-      DEVKITPPC: ${{ env.DEVKITPRO }}/devkitPPC
-      WUT_ROOT: ${{ env.DEVKITPRO }}/wut
-      PORTLIBS: ${{ env.DEVKITPRO }}/portlibs/wiiu
-      PATH: ${{ env.DEVKITPPC }}/bin:${{ env.DEVKITPRO }}/tools/bin:$PATH
+      DEVKITPPC: /opt/devkitpro/devkitPPC
+      WUT_ROOT: /opt/devkitpro/wut
+      PORTLIBS: /opt/devkitpro/portlibs/wiiu
+      PATH: /opt/devkitpro/devkitPPC/bin:/opt/devkitpro/tools/bin:$PATH
 
     steps:
-    - name: Checkout AnyPlay
-      uses: actions/checkout@v6.0.2
-      with:
-        repository: baldbuffalo/AnyPlay
-        token: ${{ secrets.GITHUB_TOKEN }}
-        persist-credentials: true
-        clean: true
-        fetch-depth: 1
-        show-progress: true
+      - name: Checkout repository
+        uses: actions/checkout@v6.0.2
+        with:
+          repository: baldbuffalo/AnyPlay
+          fetch-depth: 1
+          clean: true
 
-    - name: Install build tools
-      run: |
-        sudo apt-get update
-        sudo apt-get install -y \
-          build-essential cmake ninja-build git wget curl tar \
-          pkg-config python3 python3-pip \
-          libbz2-dev liblzma-dev libzstd-dev libssl-dev \
-          libglib2.0-dev libglib2.0-bin libpng-dev \
-          libfreetype6-dev libjpeg-dev libsndfile1-dev \
-          libasound2-dev pulseaudio libpulse-dev \
-          x11-xserver-utils xorg-dev libx11-dev libxext-dev \
-          libxi-dev libxxf86vm-dev libxcursor-dev libxrandr-dev \
-          libxinerama-dev
+      - name: Setup dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            git cmake ninja-build build-essential pkg-config \
+            libbz2-dev liblzma-dev zlib1g-dev liblz4-dev \
+            libenet-dev libgl1-mesa-dev libegl1-mesa-dev \
+            python3 python3-pip perl wget curl
+          
+      - name: Create build folder
+        run: mkdir -p build && cd build
 
-    - name: Build SDL3 from source
-      run: |
-        git clone --branch release-3.2.0 https://github.com/libsdl-org/SDL.git SDL3
-        cd SDL3
-        mkdir build && cd build
-        cmake .. -DCMAKE_INSTALL_PREFIX=/usr/local -DSDL_STATIC=OFF
-        sudo cmake --build . --target install
+      - name: Configure CMake
+        run: cmake .. -DCMAKE_BUILD_TYPE=Release -G Ninja \
+            -DCMAKE_INSTALL_PREFIX=$DEVKITPRO
 
-    - name: Build glslang from source
-      run: |
-        git clone --branch master https://github.com/KhronosGroup/glslang.git
-        cd glslang
-        mkdir build && cd build
-        cmake .. -DCMAKE_INSTALL_PREFIX=/usr/local
-        sudo cmake --build . --target install
+      - name: Build Dolphin
+        run: ninja -C build
 
-    - name: Clone Dolphin
-      run: |
-        git clone --branch master https://github.com/dolphin-emu/dolphin.git
-        ls -la dolphin
-
-    - name: Build Dolphin (Full GUI)
-      run: |
-        cd dolphin
-        mkdir -p build && cd build
-        cmake .. \
-          -G Ninja \
-          -DCMAKE_BUILD_TYPE=Release \
-          -DBUILD_HEADLESS=OFF \
-          -DUSE_SYSTEM_SDL=ON \
-          -DUSE_SYSTEM_GLSLANG=ON
-        ninja
-        sudo ninja install
-
-    - name: Upload Dolphin binaries
-      uses: actions/upload-artifact@v7
-      with:
-        name: dolphin-binaries
-        path: dolphin/build/
+      - name: Package build
+        uses: actions/upload-artifact@v7
+        with:
+          name: dolphin-build
+          path: build/
