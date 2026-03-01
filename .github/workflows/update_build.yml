@@ -3,7 +3,7 @@ name: Update and Build Wii Emulators
 on:
   push:                   # Runs on every commit push
     branches: [main]      # Only on main branch (change if needed)
-  workflow_dispatch:       # Also allows manual run
+  workflow_dispatch:       # Allows manual run
 
 jobs:
   build-wii:
@@ -33,7 +33,7 @@ jobs:
         run: |
           mkdir -p Wii/Dolphin/build
           cd Wii/Dolphin/build
-          cmake ..
+          cmake -DCMAKE_POLICY_DEFAULT_CMP0080=NEW ..
           make -j$(nproc)
 
       # Upload build artifact using v7
