@@ -13,7 +13,7 @@ jobs:
 
     steps:
     - name: Checkout repo
-      uses: actions/checkout@v3
+      uses: actions/checkout@v6.0.2
 
     - name: Install dependencies
       run: |
@@ -45,7 +45,7 @@ jobs:
         ninja
 
     - name: Archive build
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v7
       with:
         name: dolphin-wiiu-build
         path: build/
