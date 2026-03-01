@@ -1,4 +1,4 @@
-name: Build Dolphin (Wii Emulator)
+name: Build Dolphin (Wii/WiiU Emulator)
 
 on:
   push:
@@ -21,11 +21,14 @@ jobs:
           sudo apt-get install -y \
             git cmake ninja-build g++ pkg-config \
             libudev-dev libevdev-dev \
-            libx11-dev libxi-dev libxrandr-dev \
+            libx11-dev libxi-dev libxrandr-dev libxext-dev libxfixes-dev libxinerama-dev \
+            libxxf86vm-dev libglfw3-dev \
             libegl1-mesa-dev libgl1-mesa-dev \
             ffmpeg \
             libavcodec-dev libavformat-dev libavutil-dev \
-            libswresample-dev libswscale-dev
+            libswresample-dev libswscale-dev \
+            qt6-base-dev qt6-tools-dev qt6-declarative-dev \
+            liblzma-dev libbz2-dev libzstd-dev liblz4-dev
 
       # 3️⃣ Clone Dolphin with submodules
       - name: Clone Dolphin (with submodules)
@@ -40,7 +43,7 @@ jobs:
           mkdir -p Wii/Dolphin/build
           cd Wii/Dolphin/build
           cmake -G Ninja -DCMAKE_POLICY_DEFAULT_CMP0080=NEW ..
-          ninja
+          ninja -j$(nproc)
 
       # 5️⃣ Upload built binaries
       - name: Upload Dolphin Build
