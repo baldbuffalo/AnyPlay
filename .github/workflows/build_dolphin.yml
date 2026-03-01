@@ -10,21 +10,22 @@ jobs:
   build:
     runs-on: ubuntu-latest
 
-    env:
-      DEVKITPRO: /opt/devkitpro
-      DEVKITPPC: /opt/devkitpro/devkitPPC
-      WUT_ROOT: /opt/devkitpro/wut
-      PORTLIBS: /opt/devkitpro/portlibs/wiiu
-      PATH: /opt/devkitpro/devkitPPC/bin:/opt/devkitpro/tools/bin:$PATH
-
     steps:
     - name: Install essential tools
       run: |
-        apt-get update
-        apt-get install -y tar gzip git cmake ninja-build build-essential pkg-config \
+        sudo apt-get update
+        sudo apt-get install -y tar gzip git cmake ninja-build build-essential pkg-config \
           libbz2-dev liblzma-dev zlib1g-dev liblz4-dev \
           libenet-dev libgl1-mesa-dev libegl1-mesa-dev \
           python3 python3-pip perl wget curl
+
+    - name: Set Devkit Environment
+      run: |
+        echo "DEVKITPRO=/opt/devkitpro" >> $GITHUB_ENV
+        echo "DEVKITPPC=/opt/devkitpro/devkitPPC" >> $GITHUB_ENV
+        echo "WUT_ROOT=/opt/devkitpro/wut" >> $GITHUB_ENV
+        echo "PORTLIBS=/opt/devkitpro/portlibs/wiiu" >> $GITHUB_ENV
+        echo "/opt/devkitpro/devkitPPC/bin:/opt/devkitpro/tools/bin:$PATH" >> $GITHUB_PATH
 
     - name: Checkout repository
       uses: actions/checkout@v6.0.2
@@ -44,20 +45,14 @@ jobs:
         set-safe-directory: true
 
     - name: Create build directory
-      run: |
-        mkdir -p build
-        cd build
+      run: mkdir -p build
 
     - name: Configure build
-      run: |
-        cd build
-        cmake .. -DCMAKE_BUILD_TYPE=Release -G Ninja \
-          -DCMAKE_INSTALL_PREFIX=/opt/anyplay-webos
+      run: cmake -S . -B build -DCMAKE_BUILD_TYPE=Release -G Ninja \
+            -DCMAKE_INSTALL_PREFIX=/opt/anyplay-webos
 
     - name: Build AnyPlay
-      run: |
-        cd build
-        ninja
+      run: cmake --build build
 
     - name: Upload build artifacts
       uses: actions/upload-artifact@v7
