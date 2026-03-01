@@ -2,24 +2,28 @@ name: Update and Build Wii Emulators
 
 on:
   push:
-    branches: [main]
-  workflow_dispatch:
+    branches: [main]       # Run on every commit to main
+  workflow_dispatch:       # Also allows manual runs
 
 jobs:
   build-wii:
     runs-on: ubuntu-latest
 
     steps:
+      # Checkout AnyPlay repo
       - uses: actions/checkout@v6.0.2
 
-      - name: Install dependencies (with FFmpeg for video)
+      # Install all dependencies required by Dolphin
+      - name: Install dependencies (video + input support)
         run: |
           sudo apt-get update
           sudo apt-get install -y \
             git cmake g++ pkg-config \
             libudev-dev libx11-dev libegl1-mesa-dev libgl1-mesa-dev \
+            libxrandr-dev libxi-dev \
             ffmpeg libavcodec-dev libavformat-dev libavutil-dev libswresample-dev libswscale-dev
 
+      # Clone or update Dolphin source
       - name: Clone or Update Dolphin
         run: |
           DOLPHIN_DIR="Wii/Dolphin"
@@ -28,8 +32,8 @@ jobs:
             git clone https://github.com/dolphin-emu/dolphin.git $DOLPHIN_DIR
           else
             git -C $DOLPHIN_DIR pull
-          fi
 
+      # Build Dolphin
       - name: Build Dolphin
         run: |
           mkdir -p Wii/Dolphin/build
@@ -37,6 +41,7 @@ jobs:
           cmake -DCMAKE_POLICY_DEFAULT_CMP0080=NEW ..
           make -j$(nproc)
 
+      # Upload built Dolphin binaries as artifact
       - name: Upload Build Artifact
         uses: actions/upload-artifact@v7
         with:
