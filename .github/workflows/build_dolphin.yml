@@ -1,10 +1,10 @@
-name: Build for LG WebOS TV
+name: Build AnyPlay for LG WebOS
 
 on:
   push:
     branches:
       - main
-  pull_request:
+  workflow_dispatch:
 
 jobs:
   build:
@@ -18,6 +18,14 @@ jobs:
       PATH: /opt/devkitpro/devkitPPC/bin:/opt/devkitpro/tools/bin:$PATH
 
     steps:
+    - name: Install essential tools
+      run: |
+        apt-get update
+        apt-get install -y tar gzip git cmake ninja-build build-essential pkg-config \
+          libbz2-dev liblzma-dev zlib1g-dev liblz4-dev \
+          libenet-dev libgl1-mesa-dev libegl1-mesa-dev \
+          python3 python3-pip perl wget curl
+
     - name: Checkout repository
       uses: actions/checkout@v6.0.2
       with:
@@ -35,29 +43,24 @@ jobs:
         submodules: false
         set-safe-directory: true
 
-    - name: Install build dependencies
-      run: |
-        apt-get update
-        apt-get install -y tar gzip git cmake ninja-build build-essential pkg-config \
-          libbz2-dev liblzma-dev zlib1g-dev liblz4-dev \
-          libenet-dev libgl1-mesa-dev libegl1-mesa-dev \
-          python3 python3-pip perl wget curl
-
-    - name: Setup DevkitPro (Wii U)
-      run: |
-        mkdir -p $DEVKITPRO
-        cd $DEVKITPRO
-        git clone https://github.com/devkitPro/buildscripts.git
-
-    - name: Build your app for LG WebOS TV
+    - name: Create build directory
       run: |
         mkdir -p build
         cd build
-        cmake .. -DCMAKE_INSTALL_PREFIX=$DEVKITPRO
-        cmake --build . -- -j$(nproc)
+
+    - name: Configure build
+      run: |
+        cd build
+        cmake .. -DCMAKE_BUILD_TYPE=Release -G Ninja \
+          -DCMAKE_INSTALL_PREFIX=/opt/anyplay-webos
+
+    - name: Build AnyPlay
+      run: |
+        cd build
+        ninja
 
     - name: Upload build artifacts
       uses: actions/upload-artifact@v7
       with:
-        name: lgwebos-build
+        name: anyplay-webos-build
         path: build/
