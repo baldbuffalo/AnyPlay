@@ -1,72 +1,85 @@
-name: WiiU Build
+name: Build Dolphin Full GUI
 
 on:
   push:
-    branches: [ main ]
-  pull_request:
-    branches: [ main ]
+    branches:
+      - main
+  workflow_dispatch:
 
 jobs:
   build:
-    name: Build WiiU Homebrew
     runs-on: ubuntu-latest
     env:
       DEVKITPRO: /opt/devkitpro
-      DEVKITPPC: /opt/devkitpro/devkitPPC
-      WUT_ROOT: /opt/devkitpro/wut
-      PORTLIBS: /opt/devkitpro/portlibs/wiiu
-      PATH: /opt/devkitpro/devkitPPC/bin:/opt/devkitpro/tools/bin:$PATH
+      DEVKITPPC: ${{ env.DEVKITPRO }}/devkitPPC
+      WUT_ROOT: ${{ env.DEVKITPRO }}/wut
+      PORTLIBS: ${{ env.DEVKITPRO }}/portlibs/wiiu
+      PATH: ${{ env.DEVKITPPC }}/bin:${{ env.DEVKITPRO }}/tools/bin:$PATH
 
     steps:
-    - name: Checkout repository
+    - name: Checkout AnyPlay
       uses: actions/checkout@v6.0.2
+      with:
+        repository: baldbuffalo/AnyPlay
+        token: ${{ secrets.GITHUB_TOKEN }}
+        persist-credentials: true
+        clean: true
+        fetch-depth: 1
+        show-progress: true
 
-    - name: Install build dependencies
+    - name: Install build tools
       run: |
         sudo apt-get update
         sudo apt-get install -y \
-          build-essential cmake ninja-build git wget unzip \
-          libbz2-dev liblzma-dev libzstd-dev zlib1g-dev \
-          libssl-dev libiconv-hook-dev curl \
-          pkg-config python3 python3-pip python3-setuptools \
-          libxxhash-dev bzip2 xz-utils lz4 \
-          libglib2.0-dev libudev-dev libevdev-dev \
-          perl
+          build-essential cmake ninja-build git wget curl tar \
+          pkg-config python3 python3-pip \
+          libbz2-dev liblzma-dev libzstd-dev libssl-dev \
+          libglib2.0-dev libglib2.0-bin libpng-dev \
+          libfreetype6-dev libjpeg-dev libsndfile1-dev \
+          libasound2-dev pulseaudio libpulse-dev \
+          x11-xserver-utils xorg-dev libx11-dev libxext-dev \
+          libxi-dev libxxf86vm-dev libxcursor-dev libxrandr-dev \
+          libxinerama-dev
 
-    # SDL3 build from source
+    # SDL3 from source
     - name: Build SDL3
       run: |
-        git clone https://github.com/libsdl-org/SDL.git SDL3
+        git clone --branch release-3.2.0 https://github.com/libsdl-org/SDL.git SDL3
         cd SDL3
-        git checkout release-3.3.2   # latest stable SDL3 tag
         mkdir build && cd build
         cmake .. -DCMAKE_INSTALL_PREFIX=/usr/local -DSDL_STATIC=OFF
         sudo cmake --build . --target install
 
-    # glslang build from source
+    # glslang from source
     - name: Build glslang
       run: |
-        git clone https://github.com/KhronosGroup/glslang.git
+        git clone --branch master https://github.com/KhronosGroup/glslang.git
         cd glslang
-        git checkout master
         mkdir build && cd build
         cmake .. -DCMAKE_INSTALL_PREFIX=/usr/local
         sudo cmake --build . --target install
 
-    # Clone your Wii U project
-    - name: Clone Project (if needed)
-      run: git clone https://github.com/yourusername/your-wiiu-project.git
-
-    # Build the Wii U project
-    - name: Build Wii U Homebrew
+    # Dolphin build
+    - name: Build Dolphin (Full GUI)
       run: |
-        mkdir -p build && cd build
-        cmake .. -DCMAKE_BUILD_TYPE=Release -G Ninja
+        git clone --branch master https://github.com/dolphin-emu/dolphin.git
+        cd dolphin
+        mkdir build && cd build
+        cmake .. \
+          -G Ninja \
+          -DCMAKE_BUILD_TYPE=Release \
+          -DBUILD_HEADLESS=OFF \
+          -DUSE_SYSTEM_SDL=ON \
+          -DUSE_SYSTEM_GLSLANG=ON \
+          -DUSE_SYSTEM_LIBUSB=OFF \
+          -DUSE_SYSTEM_ENET=OFF \
+          -DUSE_SYSTEM_FMT=OFF
         ninja
+        # optional: install to /usr/local
+        sudo ninja install
 
-    # Upload artifacts
-    - name: Upload WiiU build artifacts
+    - name: Upload Dolphin binaries
       uses: actions/upload-artifact@v7
       with:
-        name: wiiu-build
-        path: build/*.elf
+        name: dolphin-binaries
+        path: dolphin/build/
