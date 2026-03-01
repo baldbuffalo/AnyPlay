@@ -9,6 +9,7 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
+
     env:
       DEVKITPRO: /opt/devkitpro
       DEVKITPPC: ${{ env.DEVKITPRO }}/devkitPPC
@@ -41,8 +42,7 @@ jobs:
           libxi-dev libxxf86vm-dev libxcursor-dev libxrandr-dev \
           libxinerama-dev
 
-    # SDL3 from source
-    - name: Build SDL3
+    - name: Build SDL3 from source
       run: |
         git clone --branch release-3.2.0 https://github.com/libsdl-org/SDL.git SDL3
         cd SDL3
@@ -50,8 +50,7 @@ jobs:
         cmake .. -DCMAKE_INSTALL_PREFIX=/usr/local -DSDL_STATIC=OFF
         sudo cmake --build . --target install
 
-    # glslang from source
-    - name: Build glslang
+    - name: Build glslang from source
       run: |
         git clone --branch master https://github.com/KhronosGroup/glslang.git
         cd glslang
@@ -59,23 +58,22 @@ jobs:
         cmake .. -DCMAKE_INSTALL_PREFIX=/usr/local
         sudo cmake --build . --target install
 
-    # Dolphin build
-    - name: Build Dolphin (Full GUI)
+    - name: Clone Dolphin
       run: |
         git clone --branch master https://github.com/dolphin-emu/dolphin.git
+        ls -la dolphin
+
+    - name: Build Dolphin (Full GUI)
+      run: |
         cd dolphin
-        mkdir build && cd build
+        mkdir -p build && cd build
         cmake .. \
           -G Ninja \
           -DCMAKE_BUILD_TYPE=Release \
           -DBUILD_HEADLESS=OFF \
           -DUSE_SYSTEM_SDL=ON \
-          -DUSE_SYSTEM_GLSLANG=ON \
-          -DUSE_SYSTEM_LIBUSB=OFF \
-          -DUSE_SYSTEM_ENET=OFF \
-          -DUSE_SYSTEM_FMT=OFF
+          -DUSE_SYSTEM_GLSLANG=ON
         ninja
-        # optional: install to /usr/local
         sudo ninja install
 
     - name: Upload Dolphin binaries
