@@ -18,6 +18,14 @@ jobs:
       PATH: /opt/devkitpro/devkitPPC/bin:/opt/devkitpro/tools/bin:$PATH
 
     steps:
+      - name: Install basic tools
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y tar gzip git cmake ninja-build build-essential pkg-config \
+            libbz2-dev liblzma-dev zlib1g-dev liblz4-dev \
+            libenet-dev libgl1-mesa-dev libegl1-mesa-dev \
+            python3 python3-pip perl wget curl
+
       - name: Checkout repository
         uses: actions/checkout@v6.0.2
         with:
@@ -25,15 +33,6 @@ jobs:
           fetch-depth: 1
           clean: true
 
-      - name: Setup dependencies
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y \
-            git cmake ninja-build build-essential pkg-config \
-            libbz2-dev liblzma-dev zlib1g-dev liblz4-dev \
-            libenet-dev libgl1-mesa-dev libegl1-mesa-dev \
-            python3 python3-pip perl wget curl
-          
       - name: Create build folder
         run: mkdir -p build && cd build
 
